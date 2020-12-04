@@ -152,7 +152,9 @@ class blindSeeker(object):
         # Connect to WEB Server
         try:
             s = socket(AF_INET, SOCK_STREAM, 0)
+            s.settimeout(self.timeout)
             s.connect((self.server, self.port))
+            s.settimeout(None)
 
             injection = sqlInjection.replace("*index*", str(self.index)).replace("*space*"," ")
 
@@ -249,7 +251,9 @@ class blindSeeker(object):
         # Connect to WEB Server
         try:
             s = socket(AF_INET, SOCK_STREAM, 0)
+            s.settimeout(self.timeout)
             s.connect((self.server, self.port))
+            s.settimeout(None)
 
             injection = sqlInjection.replace("*index*", str(self.index)).replace("*space*", " ")
 
@@ -324,7 +328,7 @@ class blindSeeker(object):
                 pass
 
         except Exception as err:
-            print("discover_header")
+            print("discover_endpoint")
             print(err)
             sys.exit()
     def print_info(self):
