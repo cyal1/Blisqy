@@ -2,14 +2,11 @@
 
 from lib.blindfuzzer import blindSeeker
 import argparse
-import socket
 import sys
 from urlparse import urlparse
 
-
-
 # opt
-parser = argparse.ArgumentParser(description='Detect blind sql inject via http endpoint/header')
+parser = argparse.ArgumentParser(description='Fuzzing Time-based Blind SQL injection in HTTP Endpoint/Header')
 parser.add_argument('-u', "--url", required=True, help='Required a url')
 parser.add_argument('-q', "--quiet", action="store_true", help='Quiet mode will only log less info')
 parser.add_argument('-e', "--early", action="store_true", help='Exit scan on first finding')
