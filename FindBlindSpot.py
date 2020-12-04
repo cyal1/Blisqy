@@ -50,6 +50,7 @@ headerValue = Server
 sleep = args.sleep
 quiet = args.quiet
 timeout = args.timeout
+early = args.early
 try:
     # Data to Fuzz our Target (in the format required)
     target_params = {
@@ -63,7 +64,8 @@ try:
         'endpoint': Endpoint,
         'socketTimeout': args.timeout,
         "headerValue": headerValue,
-        "quiet": quiet
+        "quiet": quiet,
+        "early": early
     }
 
     # Use blindfuzzer methods to find a Timebased Blind-Sql Injection

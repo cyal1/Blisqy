@@ -32,6 +32,7 @@ class blindSeeker(object):
         self.timeout = target_params['timeout']
         self.headerValue = target_params['headerValue']
         self.quiet = target_params['quiet']
+        self.early = target_params['early']
 
 
     def writeReport(self, report):
@@ -114,7 +115,7 @@ class blindSeeker(object):
 
         # If Fuzzing got positive results, write report
         if len(self.discover_vuln) != 0:
-            banner = "==============[ LUCKY! ]====================="
+            banner = "===================== [ LUCKY! ] ====================="
             msg = "[!] Found some +ve Results Check Fuzz Report for Details\n"
             print(
                 self.red + banner + self.clear)
@@ -220,6 +221,10 @@ class blindSeeker(object):
                            fuzzRec, inference, lineSpace]
 
                 self.discover_vuln.append(fuzzout)
+
+                if self.early:
+                    self.findings(self.discover_vuln)
+                    sys.exit(0)
                 fuzzRec = 0
 
             else:
@@ -307,6 +312,10 @@ class blindSeeker(object):
                            fuzzRec, inference, lineSpace]
 
                 self.discover_vuln.append(fuzzout)
+
+                if self.early:
+                    self.findings(self.discover_vuln)
+                    sys.exit(0)
                 fuzzRec = 0
 
             else:
