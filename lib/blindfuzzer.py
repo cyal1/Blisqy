@@ -1,3 +1,4 @@
+import urllib
 from socket import (socket, AF_INET, SOCK_STREAM)
 from datetime import datetime
 import gevent
@@ -9,7 +10,7 @@ import sys
 
 class blindSeeker(object):
 
-    def __init__(self, target_params, headerValue='fuzzer'):
+    def __init__(self, target_params):
         # Colors for Notifications and Errors
         self.red = "\x1b[1;31m"
         self.cyan = "\x1b[1;36m"
@@ -18,14 +19,19 @@ class blindSeeker(object):
         self.clear = "\x1b[0m"
 
         # Our target
+        self.endpoint= target_params['endpoint']
         self.server = target_params['server']
         self.port = target_params['port']
         self.index = target_params['index']
         self.headersFile = target_params['headersFile']
         self.injectionFile = target_params['injectionFile']
         self.HTTPVerb = target_params['method']
-        self.headerValue = headerValue
         self.discover_vuln = []
+
+        # option
+        self.timeout = target_params['timeout']
+        self.headerValue = target_params['headerValue']
+        self.quiet = target_params['quiet']
 
 
     def writeReport(self, report):
@@ -62,7 +68,7 @@ class blindSeeker(object):
 
             # Send our Payload
             data = ""
-            data += self.HTTPVerb + "/ HTTP/1.1\r\n"
+            data += self.HTTPVerb+" " + self.endpoint + " HTTP/1.1\r\n"
             data += "Host: "
             data += self.server + "\r\n"
             data += "Connection: close\r\n\r\n"
@@ -70,20 +76,22 @@ class blindSeeker(object):
             # Mark time before execution
             t1 = time.time()
             try:
-                s.send(data)
+                s.sendall(data)
+                s.settimeout(self.timeout)
                 s.recv(0)
             except Exception as err:
+                print("socket recv timeout!")
                 print(err)
                 sys.exit()
 
             # Mark time after execution
             t2 = time.time()
 
-            basetime = t2 - t1
-
+            basetime = float("{0:.8f}".format(t2 - t1))
             return basetime
 
         except Exception as err:
+            print("baseline")
             print(err)
             sys.exit()
 
@@ -130,7 +138,7 @@ class blindSeeker(object):
             print(self.cyan + msg + self.clear)
 
 
-    def discover(self, target, counter):
+    def discover_header(self, target, counter):
 
         vulnHeader = target['vulnHeader']
         sqlInjection = target['sqlInjection']
@@ -143,14 +151,14 @@ class blindSeeker(object):
             s = socket(AF_INET, SOCK_STREAM, 0)
             s.connect((self.server, self.port))
 
-            injection = sqlInjection.replace("*index*", str(self.index))
+            injection = sqlInjection.replace("*index*", str(self.index)).replace("*space*"," ")
 
 
             # Send our Payload
             data = ""
-            data += "GET / HTTP/1.1\r\n"
+            data += self.HTTPVerb+" " + self.endpoint + " HTTP/1.1\r\n"
             data += "Host: "
-            data += self.server + "\r\n"
+            data += self.server + ":" + str(self.port) + "\r\n"
             data += vulnHeader
             data += ": "
             data += self.headerValue + injection + "\r\n"
@@ -160,9 +168,11 @@ class blindSeeker(object):
             t1 = time.time()
             
             try:
-                s.send(data)
+                s.sendall(data)
+                s.settimeout(self.timeout)
                 s.recv(0)
             except Exception as err:
+                print("socket recv timeout!")
                 print(err)
                 sys.exit()
 
@@ -173,34 +183,40 @@ class blindSeeker(object):
             record = t2 - t1
 
             # Compare if time diffrence is greater than sleepTime
-            record = float("{0:.2f}".format(record))
-            Index = float("{0:.2f}".format(self.index))
+            record = float("{0:.8f}".format(record))
+            Index = float("{0:.8f}".format(self.index))
 
-            benching = baseIndex + Index
+            # benching = baseIndex + Index
 
-            timer = self.green + "[%s]" % time.asctime() + self.clear + "\n"
-            counterid = self.cyan + "[Testcase : %d]" % counter + self.clear + "\n"
-            injection = self.cyan + vulnHeader + " : " + injection + self.clear + "\n"
-            benching_value = self.green + "Benching Record : " + self.clear + self.yellow + str(benching) + self.clear + "\n"
+            # timer = self.green + "[%s]" % time.asctime() + self.clear + "\n"
+            counterid = self.cyan + "[Testcase%d] " % counter + self.clear
+            injection = self.cyan + vulnHeader + ": " + self.headerValue + injection + self.clear + "\n"
+            # benching_value = self.green + "Benching Record : " + self.clear + self.yellow + str(benching) + self.clear + "\n"
+            Baseindex_value = self.green + "Baseindex Record : " + self.clear + self.yellow + str(
+                baseIndex) + self.clear + "\n"
             fuzzrec = self.green + "Fuzzing Record : " + self.clear + self.yellow + str(record) + self.clear + "\n"
             spacer = "-----------------------------------\n"
-            
-            sys.stdout.write(timer + counterid + injection + benching_value + fuzzrec + spacer )
-            sys.stdout.flush()
+            if self.quiet:
+                sys.stdout.write(counterid + injection)
+                sys.stdout.flush()
+            else:
+                sys.stdout.write(counterid + injection + Baseindex_value + fuzzrec + spacer)
+                sys.stdout.flush()
 
-            if record > benching:
+            if record > Index:
                 inj = "[+] Injection : " + injection
-                head = "[+] Header : " + vulnHeader + "\n"
-                IndRec = "[*] Index Record : " + str(baseIndex)
-                baseInd = "[*] Benching Record : " + str(benching)
+                head = "[+] Header: " + vulnHeader + "\n"
+                IndRec = "[*] Baseindex Record : " + str(baseIndex)
+                # baseInd = "[*] Benching Record : " + str(benching)
                 fuzzRec = "[*] Fuzzing Record : " + str(record)
                 inference = "[!] Test %d is Injectable." % counter
-                lineSpace = "__________________________________\n"
+                lineSpace = "__________________________________"
 
                 print(self.red + inference + self.clear)
-                print(lineSpace)
+                if not self.quiet:
+                    print(lineSpace)
 
-                fuzzout = [inj, head, IndRec, baseInd,
+                fuzzout = [inj, head, IndRec,
                            fuzzRec, inference, lineSpace]
 
                 self.discover_vuln.append(fuzzout)
@@ -210,32 +226,118 @@ class blindSeeker(object):
                 pass
 
         except Exception as err:
+            print("discover_header")
             print(err)
             sys.exit()
 
+    def discover_endpoint(self, target, counter):
 
-    def fuzz(self):
-        
-        counter = 1
+        # vulnHeader = target['vulnHeader']
+        sqlInjection = target['sqlInjection']
 
-        target_mg = "[+] Fuzzer Running  : "
+        # Ping-time to WEB Server
+        baseIndex = self.baseline()
+        # print(baseIndex)
+
+        # Connect to WEB Server
+        try:
+            s = socket(AF_INET, SOCK_STREAM, 0)
+            s.connect((self.server, self.port))
+
+            injection = sqlInjection.replace("*index*", str(self.index)).replace("*space*", " ")
+
+            # Send our Payload
+            data = ""
+            data += self.HTTPVerb+" " + self.endpoint + urllib.quote(injection, safe='+%') + " HTTP/1.1\r\n"  # urllib.quote_plus replace ' ' to '+'
+            data += "Host: "
+            data += self.server + "\r\n"
+            data += "Connection: close\r\n\r\n"
+
+            # Mark time before execution
+            t1 = time.time()
+
+            try:
+                s.sendall(data)
+                s.settimeout(self.timeout)
+                s.recv(0)
+            except Exception as err:
+                print("socket recv timeout!")
+                print(err)
+                sys.exit()
+
+            # Mark time after execution
+            t2 = time.time()
+
+            # Record TIme
+            record = t2 - t1
+
+            # Compare if time diffrence is greater than sleepTime
+            record = float("{0:.8f}".format(record))
+            Index = float("{0:.8f}".format(self.index))
+            # print(baseIndex)
+            # benching = baseIndex + Index
+
+            # timer = self.green + "[%s]" % time.asctime() + self.clear + "\n"
+            counterid = self.cyan + "[Testcase%0d]: " % counter + self.clear
+            injection = self.cyan + self.endpoint + injection + self.clear + "\n"
+            Baseindex_value = self.green + "Baseindex Record : " + self.clear + self.yellow + str(baseIndex) + self.clear + "\n"
+            fuzzrec = self.green + "Fuzzing Record : " + self.clear + self.yellow + str(record) + self.clear + "\n"
+            spacer = "-----------------------------------\n"
+            if self.quiet:
+                sys.stdout.write(counterid + injection)
+                sys.stdout.flush()
+            else:
+                sys.stdout.write(counterid + injection + Baseindex_value + fuzzrec + spacer)
+                sys.stdout.flush()
+            # print("-"*100)
+            if record > Index:
+                inj = "[+] Injection : " + injection
+                head = "[+] Endpoint : " + self.endpoint + "\n"
+                # IndRec = "[*] Index Record : " + str(baseIndex)
+                baseInd = "[*] Baseindex Record : " + str(baseIndex)
+                fuzzRec = "[*] Fuzzing Record : " + str(record)
+                inference = "[!] [Testcase%d] is Injectable." % counter
+                lineSpace = "__________________________________"
+
+                print(self.red + inference + self.clear)
+                if not self.quiet:
+                    print(lineSpace)
+
+                fuzzout = [inj, head, baseInd,
+                           fuzzRec, inference, lineSpace]
+
+                self.discover_vuln.append(fuzzout)
+                fuzzRec = 0
+
+            else:
+                pass
+
+        except Exception as err:
+            print("discover_header")
+            print(err)
+            sys.exit()
+    def print_info(self):
+
+        target_mg = "\n[+] Fuzzer Running  : "
         target_val = self.server + ":" + str(self.port)
 
         print(self.cyan + target_mg +
-              self.clear + self.yellow + target_val + self.clear + "\n")
+              self.clear + self.yellow + target_val + self.clear)
 
         baseIndex = self.baseline()
 
-        baseIndex_vl = str(float("{0:.2f}".format(baseIndex)))
-        baseIndex_mg = "[+] Base Index Record for Target : "
+        baseIndex_vl = str(float("{0:.8f}".format(baseIndex)))
+        baseIndex_mg = "\n[+] Base Index Record for Target : "
+        baseIndex_ep = "[+] Base Endpoint for Target : "
 
-        print(self.cyan + baseIndex_mg +
-              self.clear + self.yellow + baseIndex_vl + self.clear + "\n")
+        print(self.cyan + baseIndex_ep + self.clear + self.yellow + self.endpoint + self.clear +
+              self.cyan + baseIndex_mg + self.clear + self.yellow + baseIndex_vl + self.clear)
 
-        banner = "============== Furzzzn ==============="
-
+    def fuzz_header(self):
+        
+        counter = 1
+        banner = "\n============== start Furzzzn header ==============="
         print(self.red + banner + self.clear + "\n")
-
         threads = []
 
         # Read headers File
@@ -257,11 +359,42 @@ class blindSeeker(object):
                         # gevent.spawn(self.discover(target, counter))
 
                         threads.append(gevent.spawn(
-                        self.discover(target, counter)))
+                        self.discover_header(target, counter)))
                         
                         # Increment Test Counter
                         counter = counter + 1
 
         gevent.joinall(threads)
 
-        self.findings(self.discover_vuln)
+        # self.findings(self.discover_vuln)
+
+    def fuzz_endpoint(self):
+
+        counter = 1
+        banner = "\n============== start Furzzzn endpoint ==============="
+        print(self.red + banner + self.clear + "\n")
+        threads = []
+
+        # Read Inject File
+        with open(self.injectionFile) as injectionFile:
+            for Injection in injectionFile:
+                # Create Our Fuzzing Target
+                target = {
+                    # 'vulnHeader': Header.strip(),
+                    'sqlInjection': Injection.strip()
+                }
+
+                # Run Fuzzer with target
+                # found = gevent.spawn()
+                # gevent.spawn(self.discover(target, counter))
+
+                threads.append(gevent.spawn(
+                    self.discover_endpoint(target, counter)))
+
+                # Increment Test Counter
+                counter = counter + 1
+
+
+        gevent.joinall(threads)
+
+        # self.findings(self.discover_vuln)

@@ -1,0 +1,8 @@
+Referer
+User-Agent
+X-Forwarded-For
+X-Forwarded-Host
+Host
+Origin
+Authorization
+token
