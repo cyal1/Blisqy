@@ -92,7 +92,7 @@ class blindSeeker(object):
             return basetime
 
         except Exception as err:
-            print("baseline")
+            print("socket connect timeout")
             print(err)
             sys.exit()
 
