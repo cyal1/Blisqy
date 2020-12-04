@@ -19,7 +19,7 @@ class blindSeeker(object):
         self.clear = "\x1b[0m"
 
         # Our target
-        self.endpoint= target_params['endpoint']
+        self.endpoint = target_params['endpoint']
         self.server = target_params['server']
         self.port = target_params['port']
         self.index = target_params['index']
@@ -65,7 +65,9 @@ class blindSeeker(object):
         '''Server Ping Before Fuzzing'''
         try:
             s = socket(AF_INET, SOCK_STREAM, 0)
+            s.settimeout(self.timeout)
             s.connect((self.server, self.port))
+            s.settimeout(None)
 
             # Send our Payload
             data = ""
