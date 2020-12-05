@@ -6,13 +6,15 @@ import sys
 from urlparse import urlparse
 
 # opt
-parser = argparse.ArgumentParser(description='Fuzzing Time-based Blind SQL injection in HTTP Endpoint/Header')
-parser.add_argument('-u', "--url", required=True, help='Required a url')
-parser.add_argument('-q', "--quiet", action="store_true", help='Quiet mode will only log less info')
-parser.add_argument('-e', "--early", action="store_true", help='Exit scan on first finding')
-parser.add_argument('-t', "--timeout", type=int, default=8, help='Socket connect & recv timeout value (Default: 8)')
-parser.add_argument('-s', "--sleep", type=int, default=2, help='SQL injection payload sleep time (Default: 2)')
-parser.add_argument('--header', action="store_true", default=False, help='Fuzz http header')
+parser = argparse.ArgumentParser(description='Blisqy is a tool to aid Web Security researchers to find Time-based Blind SQL injection on HTTP Endpoint/Headers.')
+parser.add_argument('-u', "--url", required=True, help='specify the url to run')
+parser.add_argument('-q', "--quiet", action="store_true", help='quiet mode will only log less info')
+parser.add_argument('-e', "--early", action="store_true", help='exit scan on first finding')
+parser.add_argument('-hd', '--header', action="store_true", default=False, help='fuzz http header')
+parser.add_argument('-ho', '--header-only', dest="headonly", action="store_true", default=False, help='fuzz http header only')
+parser.add_argument('-s', "--sleep", type=int, default=5, help='SQL injection sleep time (Default: 5)')
+parser.add_argument('-t', "--timeout", type=int, default=10, help='socket connect/recv timeout value (Default: 10)')
+
 args = parser.parse_args()
 # print(args)
 
@@ -40,7 +42,7 @@ Index = args.sleep
 Method = 'GET'   # http method
 
 # Provide files with tests for fuzzing
-Headerfile = "fuzz-data/headers/header-s.txt"
+Headerfile = "fuzz-data/headers/small-headers.txt"
 injectionfile = "fuzz-data/payloads/default.txt"
 
 headerValue = Server
@@ -68,9 +70,12 @@ try:
     # Use blindfuzzer methods to find a Timebased Blind-Sql Injection
     vulns = blindSeeker(target_params)
     vulns.print_info()
-    vulns.fuzz_endpoint()
-    if args.header:
+    if args.headonly:
         vulns.fuzz_header()
+    else:
+        vulns.fuzz_endpoint()
+        if args.header:
+            vulns.fuzz_header()
     vulns.findings(vulns.discover_vuln)
 
 except Exception as err:

@@ -2,7 +2,6 @@ import urllib
 from socket import (socket, AF_INET, SOCK_STREAM)
 from datetime import datetime
 import gevent
-import random
 import httplib2
 import time
 import sys
@@ -85,6 +84,7 @@ class blindSeeker(object):
             except Exception as err:
                 print("socket recv timeout!")
                 print(err)
+                self.findings(self.discover_vuln)
                 sys.exit()
 
             # Mark time after execution
@@ -96,6 +96,7 @@ class blindSeeker(object):
         except Exception as err:
             print("socket connect timeout")
             print(err)
+            self.findings(self.discover_vuln)
             sys.exit()
 
 
@@ -106,18 +107,17 @@ class blindSeeker(object):
 
         # Report Note
         fuzzNote = '''=================== [ Key Terms] ===================
-                    Index = Configured Constant (Delay)
-                    Base Index Record = Server Ping Before Fuzzing
-                    Benching Record  = Base Index Record + Index
+                    Payload Sleep = The SQLI Payload Sleep Value
+                    Baseindex Record = Server Ping Before Fuzzing
                     Fuzzing Record = Time taken to process request with Index
 
                     ===================== [ Logic] =====================
-                    If Fuzzing Record is greater than Benching Record,
-                    treat as a positive; else, treat as a negative.\n\n\n'''
+                    If Fuzzing Record is greater than Baseindex Record,
+                    treat as a positive; else, treat as a negative.\n'''
 
         # If Fuzzing got positive results, write report
         if len(self.discover_vuln) != 0:
-            banner = "===================== [ LUCKY! ] ====================="
+            banner = "\n===================== [ LUCKY! ] ====================="
             msg = "[!] Found some +ve Results Check Fuzz Report for Details\n"
             print(
                 self.red + banner + self.clear)
@@ -134,7 +134,7 @@ class blindSeeker(object):
 
         # If fuzzing didn't get anything +ve
         else:
-            banner = "==============[ TRY HARDER! ]====================="
+            banner = "\n===================== [ TRY HARDER! ] ====================="
             print(self.red + banner + self.clear)
 
             msg = "[-] Nothing Found. Adjust Sleeptime & Try more SQLi Payloads."
@@ -179,6 +179,7 @@ class blindSeeker(object):
             except Exception as err:
                 print("socket recv timeout!")
                 print(err)
+                self.findings(self.discover_vuln)
                 sys.exit()
 
             # Mark time after execution
@@ -195,48 +196,51 @@ class blindSeeker(object):
 
             # timer = self.green + "[%s]" % time.asctime() + self.clear + "\n"
             counterid = self.cyan + "[Testcase%d] " % counter + self.clear
-            injection = self.cyan + vulnHeader + ": " + self.headerValue + injection + self.clear + "\n"
+            injection = self.cyan + vulnHeader + ": " + self.headerValue + injection + self.clear
             # benching_value = self.green + "Benching Record : " + self.clear + self.yellow + str(benching) + self.clear + "\n"
             Baseindex_value = self.green + "Baseindex Record : " + self.clear + self.yellow + str(
                 baseIndex) + self.clear + "\n"
             fuzzrec = self.green + "Fuzzing Record : " + self.clear + self.yellow + str(record) + self.clear + "\n"
             spacer = "-----------------------------------\n"
             if self.quiet:
-                sys.stdout.write(counterid + injection)
+                sys.stdout.write(counterid + injection + "\n")
                 sys.stdout.flush()
             else:
-                sys.stdout.write(counterid + injection + Baseindex_value + fuzzrec + spacer)
+                sys.stdout.write(counterid + injection + "\n" + Baseindex_value + fuzzrec + spacer)
                 sys.stdout.flush()
 
             if record > Index:
+                target = "[+] Server: " + self.server + ":" + str(self.port)
                 inj = "[+] Injection : " + injection
-                head = "[+] Header: " + vulnHeader + "\n"
+                head = "[+] Header: " + vulnHeader
+                payloadSleep = "[*] Payload Sleep : " + str(self.index)
                 IndRec = "[*] Baseindex Record : " + str(baseIndex)
                 # baseInd = "[*] Benching Record : " + str(benching)
                 fuzzRec = "[*] Fuzzing Record : " + str(record)
-                inference = "[!] Test %d is Injectable." % counter
+                inference = "[!] [Testcase%d] is Injectable." % counter
                 lineSpace = "__________________________________"
 
                 print(self.red + inference + self.clear)
                 if not self.quiet:
                     print(lineSpace)
 
-                fuzzout = [inj, head, IndRec,
+                fuzzout = [target, head, inj, payloadSleep, IndRec,
                            fuzzRec, inference, lineSpace]
 
                 self.discover_vuln.append(fuzzout)
 
                 if self.early:
                     self.findings(self.discover_vuln)
-                    sys.exit(0)
+                    sys.exit()
                 fuzzRec = 0
 
             else:
                 pass
 
         except Exception as err:
-            print("discover_header")
+            print("socket connect timeout!")
             print(err)
+            self.findings(self.discover_vuln)
             sys.exit()
 
     def discover_endpoint(self, target, counter):
@@ -274,6 +278,7 @@ class blindSeeker(object):
             except Exception as err:
                 print("socket recv timeout!")
                 print(err)
+                self.findings(self.discover_vuln)
                 sys.exit()
 
             # Mark time after execution
@@ -289,22 +294,24 @@ class blindSeeker(object):
             # benching = baseIndex + Index
 
             # timer = self.green + "[%s]" % time.asctime() + self.clear + "\n"
-            counterid = self.cyan + "[Testcase%0d]: " % counter + self.clear
-            injection = self.cyan + self.endpoint + injection + self.clear + "\n"
+            counterid = self.cyan + "[Testcase%d]: " % counter + self.clear
+            injection = self.cyan + self.endpoint + injection + self.clear
             Baseindex_value = self.green + "Baseindex Record : " + self.clear + self.yellow + str(baseIndex) + self.clear + "\n"
             fuzzrec = self.green + "Fuzzing Record : " + self.clear + self.yellow + str(record) + self.clear + "\n"
             spacer = "-----------------------------------\n"
             if self.quiet:
-                sys.stdout.write(counterid + injection)
+                sys.stdout.write(counterid + injection + "\n")
                 sys.stdout.flush()
             else:
-                sys.stdout.write(counterid + injection + Baseindex_value + fuzzrec + spacer)
+                sys.stdout.write(counterid + injection + "\n" + Baseindex_value + fuzzrec + spacer)
                 sys.stdout.flush()
             # print("-"*100)
             if record > Index:
+                target = "[+] Server: " + self.server + ":" + str(self.port)
                 inj = "[+] Injection : " + injection
-                head = "[+] Endpoint : " + self.endpoint + "\n"
+                head = "[+] Endpoint : " + self.endpoint
                 # IndRec = "[*] Index Record : " + str(baseIndex)
+                payloadSleep = "[*] Payload Sleep : " + str(self.index)
                 baseInd = "[*] Baseindex Record : " + str(baseIndex)
                 fuzzRec = "[*] Fuzzing Record : " + str(record)
                 inference = "[!] [Testcase%d] is Injectable." % counter
@@ -314,44 +321,51 @@ class blindSeeker(object):
                 if not self.quiet:
                     print(lineSpace)
 
-                fuzzout = [inj, head, baseInd,
+                fuzzout = [target, head, inj, payloadSleep, baseInd,
                            fuzzRec, inference, lineSpace]
 
                 self.discover_vuln.append(fuzzout)
 
                 if self.early:
                     self.findings(self.discover_vuln)
-                    sys.exit(0)
+                    sys.exit()
                 fuzzRec = 0
 
             else:
                 pass
 
         except Exception as err:
-            print("discover_endpoint")
+            print("socket connect timeout!")
             print(err)
+            self.findings(self.discover_vuln)
             sys.exit()
     def print_info(self):
 
-        target_mg = "\n[+] Fuzzer Running  : "
-        target_val = self.server + ":" + str(self.port)
 
-        print(self.cyan + target_mg +
-              self.clear + self.yellow + target_val + self.clear)
+        print(""" 
+ ____  _ _                 _ 
+| __ )| (_)___  __ _ _   _| |
+|  _ \| | / __|/ _` | | | | |
+| |_) | | \__ \ (_| | |_| |_|
+|____/|_|_|___/\__, |\__, (_)
+                  |_||___/ 
+                """)
+
+        target_mg = "[+] Fuzzer Running  : "
+        target_val = self.server + ":" + str(self.port) + "\n"
+        baseIndex_ep = "[+] Base Endpoint for Target : "
+        print(self.cyan + target_mg + self.clear + self.yellow + target_val + self.clear +
+              self.cyan + baseIndex_ep + self.clear + self.yellow + self.endpoint + self.clear)
 
         baseIndex = self.baseline()
-
         baseIndex_vl = str(float("{0:.8f}".format(baseIndex)))
-        baseIndex_mg = "\n[+] Base Index Record for Target : "
-        baseIndex_ep = "[+] Base Endpoint for Target : "
-
-        print(self.cyan + baseIndex_ep + self.clear + self.yellow + self.endpoint + self.clear +
-              self.cyan + baseIndex_mg + self.clear + self.yellow + baseIndex_vl + self.clear)
+        baseIndex_mg = "[+] Base Index Record for Target : "
+        print(self.cyan + baseIndex_mg + self.clear + self.yellow + baseIndex_vl + self.clear + "\n")
 
     def fuzz_header(self):
         
         counter = 1
-        banner = "\n============== start Furzzzn header ==============="
+        banner = "\n===================== start Furzzzn header ==============="
         print(self.red + banner + self.clear + "\n")
         threads = []
 
@@ -386,7 +400,7 @@ class blindSeeker(object):
     def fuzz_endpoint(self):
 
         counter = 1
-        banner = "\n============== start Furzzzn endpoint ==============="
+        banner = "===================== start Furzzzn endpoint ==============="
         print(self.red + banner + self.clear + "\n")
         threads = []
 
